@@ -8,10 +8,10 @@
  
 
 ## To be added
-**stack corruption**
-**PEB corruption via RtlZeroMemory**
-**Remote thread crashing**
-**Manual mapping for the driver**
+- **stack corruption**
+- **PEB corruption via RtlZeroMemory**
+- **Remote thread crashing**
+- **Manual mapping for the driver**
 
 
 ## Screenshots
