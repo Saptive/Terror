@@ -4,7 +4,7 @@
 **Terror** is a malware project inspiered by the Chineese **GanDiao.sys** rootkit driver from the early 2000's. The project is aimed at learning more about kenrel development and rootkit techniques. The project includes a driver and a usermode executable. 
 
 ## Features
-- **unmapping ntdll.dll ** - The driver opens a handle to the target process (PROCESS_VM_OPERATION), and then finds the baseaddress of ntdll.dll by walking the PEB. Once found, it uses **ZwUnmapViewOfSection** to unmap it. This causes the process to crash with an access violation at the next call into ntdll.
+- **Unmapping ntdll.dll** - The driver opens a handle to the target process (PROCESS_VM_OPERATION), and then finds the baseaddress of ntdll.dll by walking the PEB. Once found, it uses **ZwUnmapViewOfSection** to unmap it. This causes the process to crash with an access violation at the next call into ntdll.
  
 
 ## To be added
