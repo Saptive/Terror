@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+
+/.vs/
+/TerrorDriver/x64/
+/Usermode/x64
