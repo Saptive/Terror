@@ -3,6 +3,9 @@
 #include "device.h"
 #include "dbgprint.h"
 
+
+
+
 #ifdef _WIN64
 // For x64 builds — most Windows 10/11 versions use this offset
 #define PsGetProcessPeb(Process) ((PPEB)(*(PVOID *)((PUCHAR)(Process) + 0x550)))
@@ -10,6 +13,10 @@
 // For x86 builds — typical offset for 32-bit Windows
 #define PsGetProcessPeb(Process) ((PPEB)(*(PVOID *)((PUCHAR)(Process) + 0x1b0)))
 #endif
+
+
+
+
 
 NTSTATUS CreateCall(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 {
@@ -56,7 +63,7 @@ NTSTATUS IOControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 		
 		DWORD pid = *(DWORD*)Irp->AssociatedIrp.SystemBuffer;
 
-		DebugPrint("pid passed: %u\n", pid);
+		DebugPrint("Control code 0x111 was passed with pid: %u\n", pid);
 		
 
 		PVOID ntdll = GetNtDll(pid);
@@ -71,7 +78,7 @@ NTSTATUS IOControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 		status = PsLookupProcessByProcessId((HANDLE)pid, &pEProcess);
 		if (!NT_SUCCESS(status)) 
 		{
-			DbgPrint("[-] PsLookupProcessByProcessId failed: 0x%X\n", status);
+			DebugPrint("[-] PsLookupProcessByProcessId failed: 0x%X\n", status);
 			return status;
 		}
 
@@ -79,7 +86,7 @@ NTSTATUS IOControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 
 		if (!NT_SUCCESS(status)) 
 		{
-			DbgPrint("[-] ObOpenObjectByPointer failed: 0x%X\n", status);
+			DebugPrint("[-] ObOpenObjectByPointer failed: 0x%X\n", status);
 			ObDereferenceObject(pEProcess);
 			return status;
 		}
@@ -88,23 +95,31 @@ NTSTATUS IOControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 
 		if (NT_SUCCESS(status)) 
 		{
-			DbgPrint("[+] ZwUnmapViewOfSection succeeded for %p\n", ntdll);
+			DebugPrint("[+] ZwUnmapViewOfSection succeeded for %p\n", ntdll);
 		}
 		else 
 		{
-			DbgPrint("[-] ZwUnmapViewOfSection FAILED for %p -> Status: 0x%X\n", ntdll, status);
+			DebugPrint("[-] ZwUnmapViewOfSection FAILED for %p -> Status: 0x%X\n", ntdll, status);
 		}
 
 		ZwClose(handle);
 		status = STATUS_SUCCESS;
+
+
+
+
 	}
+	else if (ControlCode == IO_CORRUPT_PEB)
+	{
+		DWORD pid = *(DWORD*)Irp->AssociatedIrp.SystemBuffer;
+
+		DebugPrint("Control code 0x222 was passed with pid: %u\n", pid);
 
 
 
-	
+		status = STATUS_SUCCESS;
 
-
-
+	}
 	else
 	{
 		DebugPrint("Unknown control code\n");
@@ -126,8 +141,6 @@ NTSTATUS IOControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 
 PVOID GetNtDll(DWORD pid)
 {
-
-	
 	PVOID ntdllBase = NULL;
 	NTSTATUS status = PsLookupProcessByProcessId((HANDLE)pid, &targetProcess);
 

