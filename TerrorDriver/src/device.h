@@ -13,11 +13,6 @@ typedef struct IOCTL_INPUT
 	int pid;
 } IOCTL_INPUT;
 
-//typedef struct _UNICODE_STRING {
-//    USHORT Length;
-//    USHORT MaximumLength;
-//    PWSTR  Buffer;
-//} UNICODE_STRING, * PUNICODE_STRING;
 
 typedef struct _LDR_DATA_TABLE_ENTRY {
     LIST_ENTRY InLoadOrderLinks;
@@ -49,6 +44,7 @@ typedef struct _PEB {
     PPEB_LDR_DATA Ldr;
     // other fields omitted
 } PEB, * PPEB;
+
 
 
 PEPROCESS targetProcess;

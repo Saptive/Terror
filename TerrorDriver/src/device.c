@@ -4,7 +4,7 @@
 #include "dbgprint.h"
 
 
-
+NTSYSAPI NTSTATUS NTAPI MmCopyVirtualMemory(PEPROCESS FromProcess, PVOID FromAddress, PEPROCESS ToProcess, PVOID ToAddress, SIZE_T BufferSize, KPROCESSOR_MODE PreviousMode, PSIZE_T ReturnSize);
 
 #ifdef _WIN64
 // For x64 builds — most Windows 10/11 versions use this offset
@@ -69,7 +69,7 @@ NTSTATUS IOControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 		PVOID ntdll = GetNtDll(pid);
 
 
-		DebugPrint("ntdll address: %p", ntdll);
+		DebugPrint("ntdll address: %p\n", ntdll);
 
 
 		PEPROCESS pEProcess = NULL;
@@ -116,9 +116,31 @@ NTSTATUS IOControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 		DebugPrint("Control code 0x222 was passed with pid: %u\n", pid);
 
 
+		status = PsLookupProcessByProcessId((HANDLE)pid, &targetProcess);
 
+		if (!NT_SUCCESS(status))
+		{
+			DebugPrint("Failed to get EPROCESS\n");
+			return status;
+		}
+
+		PPEB peb = PsGetProcessPeb(targetProcess);
+
+		BYTE data = { 0 };
+		SIZE_T bytes = 0;
+
+		status = MmCopyVirtualMemory(PsGetCurrentProcess(), &data, targetProcess, peb, sizeof(PEB), KernelMode, &bytes);
+
+		if (NT_SUCCESS(status))
+		{
+			DebugPrint("MmCopyVirtualMemory succeeded -> 0x%X\n", peb);
+		}
+		else
+		{
+			DebugPrint("MmCopyVirtualMemory failed 0x%X\n", status);
+			return status;
+		}
 		status = STATUS_SUCCESS;
-
 	}
 	else
 	{
