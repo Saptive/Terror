@@ -126,7 +126,7 @@ NTSTATUS IOControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 
 		PPEB peb = PsGetProcessPeb(targetProcess);
 
-		BYTE data = { 0 };
+		PEB data = { 0 };
 		SIZE_T bytes = 0;
 
 		status = MmCopyVirtualMemory(PsGetCurrentProcess(), &data, targetProcess, peb, sizeof(PEB), KernelMode, &bytes);
