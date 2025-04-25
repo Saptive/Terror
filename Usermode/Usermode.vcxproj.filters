@@ -20,7 +20,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="defs.h">
+    <ClInclude Include="src\defs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

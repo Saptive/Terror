@@ -185,6 +185,7 @@ NTSTATUS IOControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 		DebugPrint("TEB: %p  Stack: %p - %p  Stack size: %zu\n", teb, stackLimit, stackBase, stackSize);
 
 		PVOID buffer = ExAllocatePoolWithTag(NonPagedPoolNx, stackSize, 'pool');
+		SIZE_T bytes = 0;
 
 		if (!buffer)
 		{
@@ -194,13 +195,14 @@ NTSTATUS IOControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 
 		memset(buffer, 0, stackSize);
 
-		status = MmCopyVirtualMemory(PsGetCurrentProcess(), &buffer, targetProcess, stackBase, stackSize, KernelMode, NULL);
+		status = MmCopyVirtualMemory(PsGetCurrentProcess(), &buffer, targetProcess, stackBase, stackSize, KernelMode, &bytes);
 
 		if (!NT_SUCCESS(status))
 		{
 			DebugPrint("MmCopyVirtualMemory failed 0x%X\n", status);
 		}
 
+		ExFreePool(buffer);
 		return status;
 	}
 	else
