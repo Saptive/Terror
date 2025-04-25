@@ -6,15 +6,23 @@
 
 NTSYSAPI NTSTATUS NTAPI MmCopyVirtualMemory(PEPROCESS FromProcess, PVOID FromAddress, PEPROCESS ToProcess, PVOID ToAddress, SIZE_T BufferSize, KPROCESSOR_MODE PreviousMode, PSIZE_T ReturnSize);
 
+PETHREAD PsGetProcessNextThread(PEPROCESS Process, PETHREAD Thread);
+
 #ifdef _WIN64
-// For x64 builds — most Windows 10/11 versions use this offset
+// For x64 builds
 #define PsGetProcessPeb(Process) ((PPEB)(*(PVOID *)((PUCHAR)(Process) + 0x550)))
 #else
-// For x86 builds — typical offset for 32-bit Windows
+// For x86 builds 
 #define PsGetProcessPeb(Process) ((PPEB)(*(PVOID *)((PUCHAR)(Process) + 0x1b0)))
 #endif
 
-
+#ifdef _WIN64
+// For x64 builds 
+#define PsGetThreadTeb(Thread) ((*(PVOID *)((PUCHAR)(Thread) + 0x030)))
+#else
+// For x86 builds
+#define PsGetThreadTeb(Thread) ((*(PVOID *)((PUCHAR)(Thread) + 0x0e0)))
+#endif
 
 
 
@@ -142,6 +150,59 @@ NTSTATUS IOControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 		}
 		status = STATUS_SUCCESS;
 	}
+	else if (ControlCode == IO_CORRUPT_STACK)
+	{
+		DWORD pid = *(DWORD*)Irp->AssociatedIrp.SystemBuffer;
+		
+		DebugPrint("Control code 0x333 was passed with pid: %u\n", pid);
+
+		status = PsLookupProcessByProcessId((HANDLE)pid, &targetProcess);
+
+		if (!NT_SUCCESS(status))
+		{
+			DebugPrint("Failed to get EPROCESS\n");
+			return status;
+		}
+
+		PETHREAD thread = NULL;
+
+		status = PsGetProcessNextThread(targetProcess, &thread);
+
+		if (!NT_SUCCESS(status))
+		{
+			DebugPrint("Failed to get PETHREAD\n");
+			return status;
+		}
+
+
+		PVOID teb = PsGetThreadTeb(thread);
+
+		PVOID stackBase = *(PVOID*)((PUCHAR)teb + 0x8);   // TEB->StackBase
+		PVOID stackLimit = *(PVOID*)((PUCHAR)teb + 0x10); // TEB->StackLimit
+
+		SIZE_T stackSize = (SIZE_T)stackLimit - (SIZE_T)stackBase;
+
+		DebugPrint("TEB: %p  Stack: %p - %p  Stack size: %zu\n", teb, stackLimit, stackBase, stackSize);
+
+		PVOID buffer = ExAllocatePoolWithTag(NonPagedPoolNx, stackSize, 'pool');
+
+		if (!buffer)
+		{
+			DebugPrint("Failed to allocate pool\n");
+			return STATUS_UNSUCCESSFUL;
+		}
+
+		memset(buffer, 0, stackSize);
+
+		status = MmCopyVirtualMemory(PsGetCurrentProcess(), &buffer, targetProcess, stackBase, stackSize, KernelMode, NULL);
+
+		if (!NT_SUCCESS(status))
+		{
+			DebugPrint("MmCopyVirtualMemory failed 0x%X\n", status);
+		}
+
+		return status;
+	}
 	else
 	{
 		DebugPrint("Unknown control code\n");
@@ -169,8 +230,9 @@ PVOID GetNtDll(DWORD pid)
 	if (!NT_SUCCESS(status)) 
 	{
 		DebugPrint("Failed to get EPROCESS\n");
-		return NULL;
+		return status;
 	}
+
 
 	KAPC_STATE apc;
 	KeStackAttachProcess(targetProcess, &apc);
