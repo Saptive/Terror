@@ -7,6 +7,7 @@ DWORD GetProcess();
 BOOL Is64BitWindows();
 
 
+
 int main()
 {
 
@@ -19,25 +20,24 @@ int main()
 	}
 	else
 	{
-
 		HKEY hKey;
 		DWORD major = 0, minor = 0, build = 0;
 		WCHAR displayVersion[64] = { 0 };
 		DWORD size = sizeof(DWORD);
 
-		if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",0, KEY_READ, &hKey) == ERROR_SUCCESS) 
+		if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", 0, KEY_READ, &hKey) == ERROR_SUCCESS)
 		{
 			RegQueryValueExW(hKey, L"CurrentMajorVersionNumber", NULL, NULL, (LPBYTE)&major, &size);
 			RegQueryValueExW(hKey, L"CurrentMinorVersionNumber", NULL, NULL, (LPBYTE)&minor, &size);
 
 			WCHAR buildStr[20];
 			DWORD buildSize = sizeof(buildStr);
-			if (RegQueryValueExW(hKey, L"CurrentBuildNumber", NULL, NULL, (LPBYTE)buildStr, &buildSize) == ERROR_SUCCESS) 
+			if (RegQueryValueExW(hKey, L"CurrentBuildNumber", NULL, NULL, (LPBYTE)buildStr, &buildSize) == ERROR_SUCCESS)
 			{
 				build = _wtoi(buildStr);
 			}
 
-			
+
 			size = sizeof(displayVersion);
 			RegQueryValueExW(hKey, L"DisplayVersion", NULL, NULL, (LPBYTE)displayVersion, &size);
 			RegCloseKey(hKey);
@@ -47,11 +47,10 @@ int main()
 		printf("CPU architecture: x64  \nOS version: %ls \nBuild: %d\n", displayVersion, build);
 		printf("========================================================\n\n");
 
+			RegCloseKey(hKey);
+
+		
 	}
-
-
-
-
 
 	if (!CreateHandle())
 	{
@@ -137,6 +136,7 @@ BOOL Is64BitWindows()
 	return FALSE;
 
 }
+
 
 
 //loop through the process list and if a target process is found, send the PID to the driver via the correct control code
