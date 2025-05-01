@@ -9,6 +9,8 @@
 
 
 
+
+
 typedef struct IOCTL_INPUT
 {
 	int pid;
@@ -24,7 +26,6 @@ typedef struct _LDR_DATA_TABLE_ENTRY {
     ULONG SizeOfImage;
     UNICODE_STRING FullDllName;
     UNICODE_STRING BaseDllName;
-    // other fields omitted
 } LDR_DATA_TABLE_ENTRY, * PLDR_DATA_TABLE_ENTRY;
 
 typedef struct _PEB_LDR_DATA {
@@ -32,7 +33,6 @@ typedef struct _PEB_LDR_DATA {
     BOOLEAN Initialized;
     PVOID SsHandle;
     LIST_ENTRY InLoadOrderModuleList;
-    // other fields omitted
 } PEB_LDR_DATA, * PPEB_LDR_DATA;
 
 typedef struct _PEB {
@@ -43,8 +43,9 @@ typedef struct _PEB {
     PVOID Mutant;
     PVOID ImageBaseAddress;
     PPEB_LDR_DATA Ldr;
-    // other fields omitted
 } PEB, * PPEB;
+
+
 
 
 

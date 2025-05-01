@@ -75,8 +75,15 @@ int main()
 			ctlcode = IO_CORRUPT_PEB;
 			printf("PEB corruption\n");
 			printf("Waiting for target proc...\n");
-
 			break;
+		}
+		else if (code == 3)
+		{
+			ctlcode = IO_CORRUPT_STACK;
+			printf("Stack corruption\n");
+			printf("Waiting for target proc...\n");
+			break;
+
 		}
 		else
 		{
@@ -173,6 +180,8 @@ DWORD GetProcess()
 						if (!DeviceIoControl(hDevice, ctlcode, &pid, sizeof(pid), NULL, 0, NULL, NULL))
 						{
 							printf("DeviceIoControl failed for PID %lu with error %lu\n", pid, GetLastError());
+							Sleep(10000);
+							ExitProcess(0);
 						}
 
 					}

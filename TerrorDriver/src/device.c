@@ -6,7 +6,7 @@
 
 NTSYSAPI NTSTATUS NTAPI MmCopyVirtualMemory(PEPROCESS FromProcess, PVOID FromAddress, PEPROCESS ToProcess, PVOID ToAddress, SIZE_T BufferSize, KPROCESSOR_MODE PreviousMode, PSIZE_T ReturnSize);
 
-PETHREAD PsGetProcessNextThread(PEPROCESS Process, PETHREAD Thread);
+NTSYSCALLAPI NTSTATUS NTAPI ZwGetNextThread(_In_ HANDLE ProcessHandle, _In_ HANDLE ThreadHandle, _In_ ACCESS_MASK DesiredAccess, _In_ ULONG HandleAttributes, _In_ ULONG Flags, _Out_ PHANDLE NewThreadHandle);
 
 #ifdef _WIN64
 // For x64 builds
@@ -152,6 +152,8 @@ NTSTATUS IOControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 	}
 	else if (ControlCode == IO_CORRUPT_STACK)
 	{
+
+
 		DWORD pid = *(DWORD*)Irp->AssociatedIrp.SystemBuffer;
 		
 		DebugPrint("Control code 0x333 was passed with pid: %u\n", pid);
@@ -164,45 +166,63 @@ NTSTATUS IOControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 			return status;
 		}
 
-		PETHREAD thread = NULL;
+		
+		HANDLE threadHandle = NULL;
 
-		status = PsGetProcessNextThread(targetProcess, &thread);
+		status = ZwGetNextThread(targetProcess, NULL, 0x0040 | 0x0008, 0, 0, &threadHandle); // (THREAD_QUERY_INFORMATION | THREAD_GET_CONTEXT)
 
 		if (!NT_SUCCESS(status))
 		{
-			DebugPrint("Failed to get PETHREAD\n");
-			return status;
+			DebugPrint("ZwGetNextThread failed: 0x%X", status);
 		}
 
 
+		PETHREAD thread = NULL;
+
+
+		status = ObReferenceObjectByHandle(threadHandle, 0x0040, *PsThreadType, KernelMode, (PVOID*)&thread, NULL);
+
+
+		if (!NT_SUCCESS(status))
+		{
+			DebugPrint("ObReferenceObjectByHandle failed: 0x%X", status);
+		}
+
 		PVOID teb = PsGetThreadTeb(thread);
 
-		PVOID stackBase = *(PVOID*)((PUCHAR)teb + 0x8);   // TEB->StackBase
-		PVOID stackLimit = *(PVOID*)((PUCHAR)teb + 0x10); // TEB->StackLimit
+		if (teb == NULL)
+		{
+			DebugPrint("teb is NULL\n");
+
+		}
+
+		PVOID stackBase  = *(PVOID*)((PUCHAR)teb + 0x8);   // TEB->StackBase
+		PVOID stackLimit = *(PVOID*)((PUCHAR)teb + 0x10);  // TEB->StackLimit
 
 		SIZE_T stackSize = (SIZE_T)stackLimit - (SIZE_T)stackBase;
 
 		DebugPrint("TEB: %p  Stack: %p - %p  Stack size: %zu\n", teb, stackLimit, stackBase, stackSize);
 
-		PVOID buffer = ExAllocatePoolWithTag(NonPagedPoolNx, stackSize, 'pool');
-		SIZE_T bytes = 0;
+		//PVOID buffer = ExAllocatePoolWithTag(NonPagedPoolNx, stackSize, 'pool');
+		//SIZE_T bytes = 0;
 
-		if (!buffer)
-		{
-			DebugPrint("Failed to allocate pool\n");
-			return STATUS_UNSUCCESSFUL;
-		}
+		//if (!buffer)
+		//{
+		//	DebugPrint("Failed to allocate pool\n");
+		//	return STATUS_UNSUCCESSFUL;
+		//}
 
-		memset(buffer, 0, stackSize);
+		//memset(buffer, 0, stackSize);
 
-		status = MmCopyVirtualMemory(PsGetCurrentProcess(), &buffer, targetProcess, stackBase, stackSize, KernelMode, &bytes);
+		//status = MmCopyVirtualMemory(PsGetCurrentProcess(), &buffer, targetProcess, stackBase, stackSize, KernelMode, &bytes);
 
-		if (!NT_SUCCESS(status))
-		{
-			DebugPrint("MmCopyVirtualMemory failed 0x%X\n", status);
-		}
+		//if (!NT_SUCCESS(status))
+		//{
+		//	DebugPrint("MmCopyVirtualMemory failed 0x%X\n", status);
+		//}
 
-		ExFreePool(buffer);
+		//ExFreePool(buffer);
+		//ObDereferenceObject(thread);
 		return status;
 	}
 	else
