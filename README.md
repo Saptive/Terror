@@ -10,14 +10,18 @@
 
 ## To be added
 ### Driver
+- **Elevate um process to SYSTEM**
 - **Stack corruption**
-- **Remote thread crashing**
-- **Protection of the um process**
+
 
 ### Bootkit
-- **Suport for both MBR and UEFI systems**
-- **Disable DSE and PG**
 - **Load the driver before ELAM drivers**
+- **Disable DSE and PG**
+- **Suport for both MBR and UEFI systems**
+
+### Usermode executable
+- **Support for any unwanted process**
+- **A more reliable way to check for processes**
 
 
 ## Screenshots

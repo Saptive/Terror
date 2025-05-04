@@ -143,91 +143,123 @@ NTSTATUS IOControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 				break;
 			}
 			status = STATUS_SUCCESS;
+
+
 		}
-		else if (ControlCode == IO_CORRUPT_STACK)
-		{
-			DWORD pid = *(DWORD*)Irp->AssociatedIrp.SystemBuffer;
+		//else if (ControlCode == IO_CORRUPT_STACK)
+		//{
+		//	DWORD pid = *(DWORD*)Irp->AssociatedIrp.SystemBuffer;
 
-			DebugPrint("Control code 0x333 was passed with pid: %u\n", pid);
+		//	DebugPrint("Control code 0x333 was passed with pid: %u\n", pid);
 
-			status = PsLookupProcessByProcessId((HANDLE)pid, &targetProcess);
+		//	status = PsLookupProcessByProcessId((HANDLE)pid, &targetProcess);
 
-			if (!NT_SUCCESS(status))
-			{
-				DebugPrint("Failed to get EPROCESS\n");
-				break;
-			}
+		//	if (!NT_SUCCESS(status))
+		//	{
+		//		DebugPrint("Failed to get EPROCESS\n");
+		//		break;
+		//	}
 
-			HANDLE threadHandle = NULL;
-
-			status = ZwGetNextThread(targetProcess, NULL, THREAD_QUERY_LIMITED_INFORMATION | THREAD_GET_CONTEXT, 0, 0, &threadHandle);
-
-			if (!NT_SUCCESS(status))
-			{
-				DebugPrint("ZwGetNextThread failed: 0x%X", status);
-			}
-
-			/*
-					PETHREAD thread = NULL;
+		//	HANDLE threadHandle = NULL;
+		//	HANDLE processHandle = NULL;
 
 
-					status = ObReferenceObjectByHandle(threadHandle, 0x0040, *PsThreadType, KernelMode, (PVOID*)&thread, NULL);
+		//	status = ObOpenObjectByPointer(targetProcess, OBJ_KERNEL_HANDLE, NULL, 0x0008, *PsProcessType, KernelMode, &processHandle);
+
+		//	if (!NT_SUCCESS(status))
+		//	{
+		//		DebugPrint("ObOpenObjectByPointer failed: 0x%X\n", status);
+		//		return status;
+		//	}
+
+		//	status = ZwGetNextThread(processHandle, NULL, THREAD_QUERY_LIMITED_INFORMATION | THREAD_GET_CONTEXT, 0, 0, &threadHandle);
+
+		//	if (!NT_SUCCESS(status))
+		//	{
+		//		DebugPrint("ZwGetNextThread failed: 0x%X", status);
+		//	}
 
 
-					if (!NT_SUCCESS(status))
-					{
-						DebugPrint("ObReferenceObjectByHandle failed: 0x%X", status);
-					}
+		//	PETHREAD thread = NULL;
 
-					PVOID teb = PsGetThreadTeb(thread);
 
-					if (teb == NULL)
-					{
-						DebugPrint("teb is NULL\n");
+		//	status = ObReferenceObjectByHandle(threadHandle, 0x0040, *PsThreadType, KernelMode, (PVOID*)&thread, NULL);
 
-					}
 
-					PVOID stackBase  = *(PVOID*)((PUCHAR)teb + 0x8);   // TEB->StackBase
-					PVOID stackLimit = *(PVOID*)((PUCHAR)teb + 0x10);  // TEB->StackLimit
+		//	if (!NT_SUCCESS(status))
+		//	{
+		//		DebugPrint("ObReferenceObjectByHandle failed: 0x%X", status);
+		//	}
 
-					SIZE_T stackSize = (SIZE_T)stackLimit - (SIZE_T)stackBase;
+		//	PVOID teb = PsGetThreadTeb(thread);
 
-					DebugPrint("TEB: %p  Stack: %p - %p  Stack size: %zu\n", teb, stackLimit, stackBase, stackSize);
+		//	if (teb == NULL)
+		//	{
+		//		DebugPrint("teb is NULL\n");
+		//	}
 
-					//PVOID buffer = ExAllocatePoolWithTag(NonPagedPoolNx, stackSize, 'pool');
-					//SIZE_T bytes = 0;
+		//	//PVOID stackBase = *(PVOID*)((PUCHAR)teb + 0x8);   // TEB->StackBase
+		//	//PVOID stackLimit = *(PVOID*)((PUCHAR)teb + 0x10);  // TEB->StackLimit
 
-					//if (!buffer)
-					//{
-					//	DebugPrint("Failed to allocate pool\n");
-					//  status = STATUS_UNSUCCESSFUL;
-					//  break;
-					//}
 
-					//memset(buffer, 0, stackSize);
+		//	KAPC_STATE apc;
+		//	KeStackAttachProcess(targetProcess, &apc);
 
-					//status = MmCopyVirtualMemory(PsGetCurrentProcess(), &buffer, targetProcess, stackBase, stackSize, KernelMode, &bytes);
+		//	NT_TIB* tib = (NT_TIB*)teb;
+		//	SIZE_T bytes = 0;
 
-					//if (!NT_SUCCESS(status))
-					//{
-					//	DebugPrint("MmCopyVirtualMemory failed 0x%X\n", status);
-					//}
+		//	status = MmCopyVirtualMemory(targetProcess, teb, PsGetCurrentProcess(), &tib, sizeof(NT_TIB), KernelMode, &bytes);
 
-					//ExFreePool(buffer);
-					//ObDereferenceObject(thread);
+		//	if (!NT_SUCCESS(status))
+		//	{
+		//		DebugPrint("MmCopyVirtualMemory failed (tib) -> 0x%X", status);
+		//		break;
+		//	}
 
-					break;
-			*/
-			status = STATUS_SUCCESS;
-		}
+		//	DebugPrint("MmCopyVirtualMemory status: 0x%X, bytesCopied: %llu\n", status, bytes);
+
+
+
+		//	PVOID stackBase = tib->StackBase;
+		//	PVOID stackLimit = tib->StackLimit;
+
+		//	SIZE_T stackSize = (SIZE_T)stackLimit - (SIZE_T)stackBase;
+
+		//	DebugPrint("TEB: %p  Stack: %p - %p  Stack size: %zu\n", teb, stackLimit, stackBase, stackSize);
+
+		//	PVOID buffer = ExAllocatePoolWithTag(NonPagedPoolNx, stackSize, 'pool');
+		//	SIZE_T bytes = 0;
+
+		//	if (!buffer)
+		//	{
+		//	DebugPrint("Failed to allocate pool\n");
+		//	  status = STATUS_UNSUCCESSFUL;
+		//	  break;
+		//	}
+
+		//	memset(buffer, 0, stackSize);
+
+		//	status = MmCopyVirtualMemory(PsGetCurrentProcess(), &buffer, targetProcess, stackBase, stackSize, KernelMode, &bytes);
+
+		//	if (!NT_SUCCESS(status))
+		//	{
+		//		DebugPrint("MmCopyVirtualMemory failed 0x%X\n", status);
+		//	}
+
+		//	ExFreePool(buffer);
+		//	ObDereferenceObject(thread);
+
+
+		//	KeUnstackDetachProcess(&apc);
+		//	status = STATUS_SUCCESS;
+		//}
 		else
 		{
 			DebugPrint("Unknown control code\n");
 
 			ByteIo = 0;
 		}
-	}
-	while (FALSE);
+	} while (FALSE);
 
 	Irp->IoStatus.Status = status;
 	Irp->IoStatus.Information = 0;
@@ -242,7 +274,7 @@ PVOID GetNtDll(DWORD pid)
 	PVOID ntdllBase = NULL;
 	NTSTATUS status = PsLookupProcessByProcessId((HANDLE)pid, &targetProcess);
 
-	if (!NT_SUCCESS(status)) 
+	if (!NT_SUCCESS(status))
 	{
 		DebugPrint("Failed to get EPROCESS\n");
 		return status;
@@ -253,22 +285,22 @@ PVOID GetNtDll(DWORD pid)
 	KeStackAttachProcess(targetProcess, &apc);
 
 	PPEB peb = PsGetProcessPeb(targetProcess);
-	if (peb && MmIsAddressValid(peb)) 
+	if (peb && MmIsAddressValid(peb))
 	{
 		PPEB_LDR_DATA ldr = peb->Ldr;
-		if (ldr && MmIsAddressValid(ldr)) 
+		if (ldr && MmIsAddressValid(ldr))
 		{
 			PLIST_ENTRY head = &ldr->InLoadOrderModuleList;
-			if (MmIsAddressValid(head)) 
+			if (MmIsAddressValid(head))
 			{
 				PLIST_ENTRY curr = head->Flink;
 
-				while (curr && curr != head && MmIsAddressValid(curr)) 
+				while (curr && curr != head && MmIsAddressValid(curr))
 				{
 					PLDR_DATA_TABLE_ENTRY entry = CONTAINING_RECORD(curr, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks);
-					if (MmIsAddressValid(entry) && MmIsAddressValid(entry->BaseDllName.Buffer)) 
+					if (MmIsAddressValid(entry) && MmIsAddressValid(entry->BaseDllName.Buffer))
 					{
-						if (_wcsicmp(entry->BaseDllName.Buffer, L"ntdll.dll") == 0) 
+						if (_wcsicmp(entry->BaseDllName.Buffer, L"ntdll.dll") == 0)
 						{
 							ntdllBase = entry->DllBase;
 							break;
