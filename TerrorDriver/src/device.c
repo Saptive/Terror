@@ -147,114 +147,113 @@ NTSTATUS IOControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 
 		}
 
+		else if (ControlCode == IO_CORRUPT_STACK)
+		{
+			DWORD pid = *(DWORD*)Irp->AssociatedIrp.SystemBuffer;
 
-		//else if (ControlCode == IO_CORRUPT_STACK)
-		//{
-		//	DWORD pid = *(DWORD*)Irp->AssociatedIrp.SystemBuffer;
+			DebugPrint("Control code 0x333 was passed with pid: %u\n", pid);
 
-		//	DebugPrint("Control code 0x333 was passed with pid: %u\n", pid);
+			//status = PsLookupProcessByProcessId((HANDLE)pid, &targetProcess);
 
-		//	status = PsLookupProcessByProcessId((HANDLE)pid, &targetProcess);
+			//if (!NT_SUCCESS(status))
+			//{
+			//	DebugPrint("Failed to get EPROCESS\n");
+			//	break;
+			//}
 
-		//	if (!NT_SUCCESS(status))
-		//	{
-		//		DebugPrint("Failed to get EPROCESS\n");
-		//		break;
-		//	}
-
-		//	HANDLE threadHandle = NULL;
-		//	HANDLE processHandle = NULL;
-
-
-		//	status = ObOpenObjectByPointer(targetProcess, OBJ_KERNEL_HANDLE, NULL, 0x0008, *PsProcessType, KernelMode, &processHandle);
-
-		//	if (!NT_SUCCESS(status))
-		//	{
-		//		DebugPrint("ObOpenObjectByPointer failed: 0x%X\n", status);
-		//		return status;
-		//	}
-
-		//	status = ZwGetNextThread(processHandle, NULL, THREAD_QUERY_LIMITED_INFORMATION | THREAD_GET_CONTEXT, 0, 0, &threadHandle);
-
-		//	if (!NT_SUCCESS(status))
-		//	{
-		//		DebugPrint("ZwGetNextThread failed: 0x%X", status);
-		//	}
+			//HANDLE threadHandle = NULL;
+			//HANDLE processHandle = NULL;
 
 
-		//	PETHREAD thread = NULL;
+			//status = ObOpenObjectByPointer(targetProcess, OBJ_KERNEL_HANDLE, NULL, 0x0008, *PsProcessType, KernelMode, &processHandle);
+
+			//if (!NT_SUCCESS(status))
+			//{
+			//	DebugPrint("ObOpenObjectByPointer failed: 0x%X\n", status);
+			//	return status;
+			//}
+
+			//status = ZwGetNextThread(processHandle, NULL, THREAD_QUERY_LIMITED_INFORMATION | THREAD_GET_CONTEXT, 0, 0, &threadHandle);
+
+			//if (!NT_SUCCESS(status))
+			//{
+			//	DebugPrint("ZwGetNextThread failed: 0x%X", status);
+			//}
 
 
-		//	status = ObReferenceObjectByHandle(threadHandle, 0x0040, *PsThreadType, KernelMode, (PVOID*)&thread, NULL);
+			//PETHREAD thread = NULL;
 
 
-		//	if (!NT_SUCCESS(status))
-		//	{
-		//		DebugPrint("ObReferenceObjectByHandle failed: 0x%X", status);
-		//	}
-
-		//	PVOID teb = PsGetThreadTeb(thread);
-
-		//	if (teb == NULL)
-		//	{
-		//		DebugPrint("teb is NULL\n");
-		//	}
-
-		//	//PVOID stackBase = *(PVOID*)((PUCHAR)teb + 0x8);   // TEB->StackBase
-		//	//PVOID stackLimit = *(PVOID*)((PUCHAR)teb + 0x10);  // TEB->StackLimit
+			//status = ObReferenceObjectByHandle(threadHandle, 0x0040, *PsThreadType, KernelMode, (PVOID*)&thread, NULL);
 
 
-		//	KAPC_STATE apc;
-		//	KeStackAttachProcess(targetProcess, &apc);
+			//if (!NT_SUCCESS(status))
+			//{
+			//	DebugPrint("ObReferenceObjectByHandle failed: 0x%X", status);
+			//}
 
-		//	NT_TIB* tib = (NT_TIB*)teb;
-		//	SIZE_T bytes = 0;
+			//PVOID teb = PsGetThreadTeb(thread);
 
-		//	status = MmCopyVirtualMemory(targetProcess, teb, PsGetCurrentProcess(), &tib, sizeof(NT_TIB), KernelMode, &bytes);
+			//if (teb == NULL)
+			//{
+			//	DebugPrint("teb is NULL\n");
+			//}
 
-		//	if (!NT_SUCCESS(status))
-		//	{
-		//		DebugPrint("MmCopyVirtualMemory failed (tib) -> 0x%X", status);
-		//		break;
-		//	}
-
-		//	DebugPrint("MmCopyVirtualMemory status: 0x%X, bytesCopied: %llu\n", status, bytes);
-
+			////PVOID stackBase = *(PVOID*)((PUCHAR)teb + 0x8);   // TEB->StackBase
+			////PVOID stackLimit = *(PVOID*)((PUCHAR)teb + 0x10);  // TEB->StackLimit
 
 
-		//	PVOID stackBase = tib->StackBase;
-		//	PVOID stackLimit = tib->StackLimit;
+			//KAPC_STATE apc;
+			//KeStackAttachProcess(targetProcess, &apc);
 
-		//	SIZE_T stackSize = (SIZE_T)stackLimit - (SIZE_T)stackBase;
+			//NT_TIB* tib = (NT_TIB*)teb;
+			//SIZE_T bytes = 0;
 
-		//	DebugPrint("TEB: %p  Stack: %p - %p  Stack size: %zu\n", teb, stackLimit, stackBase, stackSize);
+			//status = MmCopyVirtualMemory(targetProcess, teb, PsGetCurrentProcess(), &tib, sizeof(NT_TIB), KernelMode, &bytes);
 
-		//	PVOID buffer = ExAllocatePoolWithTag(NonPagedPoolNx, stackSize, 'pool');
-		//	SIZE_T bytes = 0;
+			//if (!NT_SUCCESS(status))
+			//{
+			//	DebugPrint("MmCopyVirtualMemory failed (tib) -> 0x%X", status);
+			//	break;
+			//}
 
-		//	if (!buffer)
-		//	{
-		//	DebugPrint("Failed to allocate pool\n");
-		//	  status = STATUS_UNSUCCESSFUL;
-		//	  break;
-		//	}
-
-		//	memset(buffer, 0, stackSize);
-
-		//	status = MmCopyVirtualMemory(PsGetCurrentProcess(), &buffer, targetProcess, stackBase, stackSize, KernelMode, &bytes);
-
-		//	if (!NT_SUCCESS(status))
-		//	{
-		//		DebugPrint("MmCopyVirtualMemory failed 0x%X\n", status);
-		//	}
-
-		//	ExFreePool(buffer);
-		//	ObDereferenceObject(thread);
+			//DebugPrint("MmCopyVirtualMemory status: 0x%X, bytesCopied: %llu\n", status, bytes);
 
 
-		//	KeUnstackDetachProcess(&apc);
-		//	status = STATUS_SUCCESS;
-		//}
+
+			//PVOID stackBase = tib->StackBase;
+			//PVOID stackLimit = tib->StackLimit;
+
+			//SIZE_T stackSize = (SIZE_T)stackLimit - (SIZE_T)stackBase;
+
+			//DebugPrint("TEB: %p  Stack: %p - %p  Stack size: %zu\n", teb, stackLimit, stackBase, stackSize);
+
+			//PVOID buffer = ExAllocatePoolWithTag(NonPagedPoolNx, stackSize, 'pool');
+			//SIZE_T bytes = 0;
+
+			//if (!buffer)
+			//{
+			//DebugPrint("Failed to allocate pool\n");
+			//  status = STATUS_UNSUCCESSFUL;
+			//  break;
+			//}
+
+			//memset(buffer, 0, stackSize);
+
+			//status = MmCopyVirtualMemory(PsGetCurrentProcess(), &buffer, targetProcess, stackBase, stackSize, KernelMode, &bytes);
+
+			//if (!NT_SUCCESS(status))
+			//{
+			//	DebugPrint("MmCopyVirtualMemory failed 0x%X\n", status);
+			//}
+
+			//ExFreePool(buffer);
+			//ObDereferenceObject(thread);
+
+
+			//KeUnstackDetachProcess(&apc);
+			status = STATUS_SUCCESS;
+		}
 
 
 		else if (ControlCode == IO_ELEVATE_PROCESS)

